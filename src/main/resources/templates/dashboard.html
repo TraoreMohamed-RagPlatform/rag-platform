@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - RAG Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="icon"><i class="fa-solid fa-brain"></i></div>
+        <div>
+            <h2>RAG Platform</h2>
+            <span>Gestion documentaire IA</span>
+        </div>
+    </div>
+    <nav>
+        <div class="nav-section">Principal</div>
+        <a href="/dashboard" class="nav-item active">
+            <i class="fa-solid fa-gauge"></i> Tableau de bord
+        </a>
+        <a href="/documents" class="nav-item">
+            <i class="fa-solid fa-files"></i> Mes documents
+            <span class="nav-badge">0</span>
+        </a>
+        <a href="/chat" class="nav-item">
+            <i class="fa-solid fa-message"></i> Chat IA
+        </a>
+        <a href="/history" class="nav-item">
+            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+        </a>
+        <div class="nav-section">Administration</div>
+        <a href="/admin/users" class="nav-item">
+            <i class="fa-solid fa-users"></i> Utilisateurs
+        </a>
+        <a href="/admin/stats" class="nav-item">
+            <i class="fa-solid fa-chart-bar"></i> Statistiques
+        </a>
+        <a href="/settings" class="nav-item">
+            <i class="fa-solid fa-gear"></i> Parametres
+        </a>
+    </nav>
+    <div class="sidebar-stats">
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-files"></i> Documents</span>
+            <b>0</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-users"></i> Utilisateurs</span>
+            <b>2</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-message"></i> Questions</span>
+            <b>0</b>
+        </div>
+    </div>
+    <div class="sidebar-user">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+            <p th:text="${#authentication.name}">Admin</p>
+            <span>Administrateur</span>
+        </div>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div class="main-content">
+    <div class="topbar">
+        <div>
+            <h1>Tableau de bord</h1>
+            <span>Bienvenue sur RAG Platform</span>
+        </div>
+        <div class="topbar-right">
+            <a href="/documents" class="btn-primary">
+                <i class="fa-solid fa-upload"></i> Uploader un document
+            </a>
+            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none; margin-left:8px;">
+                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
+            </a>
+        </div>
+    </div>
+
+    <div class="page-body">
+        <!-- Stats cards -->
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;">
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+        <div style="font-size:12px; color:#64748b; margin-bottom:8px;"><i class="fa-solid fa-files"></i> Documents uploades</div>
+        <div style="font-size:28px; font-weight:700; color:#0f172a;">0</div>
+        <div style="font-size:12px; color:#22c55e; margin-top:4px;">Aucun document pour l'instant</div>
+    </div>
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+        <div style="font-size:12px; color:#64748b; margin-bottom:8px;"><i class="fa-solid fa-message"></i> Questions posees</div>
+        <div style="font-size:28px; font-weight:700; color:#0f172a;">0</div>
+        <div style="font-size:12px; color:#64748b; margin-top:4px;">Aucune question pour l'instant</div>
+    </div>
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
+        <div style="font-size:12px; color:#64748b; margin-bottom:8px;"><i class="fa-solid fa-users"></i> Utilisateurs</div>
+        <div style="font-size:28px; font-weight:700; color:#0f172a;">2</div>
+        <div style="font-size:12px; color:#3b82f6; margin-top:4px;">2 comptes actifs</div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+    <h3 style="font-size:14px; font-weight:600; color:#0f172a; margin-bottom:16px;"><i class="fa-solid fa-bolt"></i> Actions rapides</h3>
+    <div style="display:flex; gap:12px;">
+        <a href="/documents" style="display:flex; align-items:center; gap:8px; background:#1e3a5f; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500;">
+            <i class="fa-solid fa-upload"></i> Uploader un document
+        </a>
+        <a href="/chat" style="display:flex; align-items:center; gap:8px; background:#eff6ff; color:#1e3a5f; padding:10px 18px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; border:1px solid #bfdbfe;">
+            <i class="fa-solid fa-message"></i> Demarrer un chat
+        </a>
+    </div>
+</div>
+
+<!-- Message de bienvenue -->
+<div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:20px; display:flex; align-items:center; gap:16px;">
+    <div style="width:48px; height:48px; background:#1e3a5f; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; flex-shrink:0;">
+        <i class="fa-solid fa-brain"></i>
+    </div>
+    <div>
+        <h3 style="font-size:14px; font-weight:600; color:#1e3a5f; margin-bottom:4px;">Bienvenue sur RAG Platform !</h3>
+        <p style="font-size:13px; color:#3b82f6;">Commencez par uploader vos documents PDF, Excel ou images. L'IA analysera leur contenu et repondra a vos questions uniquement a partir de ces documents.</p>
+    </div>
+</div>
+    </div>
+</div>
+
+</body>
+</html>
