@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat IA - RAG Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .chat-layout {
+            display: flex;
+            height: calc(100vh - 57px);
+            overflow: hidden;
+        }
+        .doc-panel {
+            width: 260px;
+            border-right: 1px solid #e2e8f0;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .doc-panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .doc-panel-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .doc-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-bottom: 4px;
+        }
+        .doc-item:hover { background: #f1f5f9; }
+        .doc-item.selected { background: #eff6ff; }
+        .file-ic {
+            width: 32px;
+            height: 36px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .pdf-ic { background: #fee2e2; color: #dc2626; }
+        .xls-ic { background: #dcfce7; color: #16a34a; }
+        .img-ic { background: #fef3c7; color: #d97706; }
+        .doc-item-info p {
+            font-size: 12px;
+            font-weight: 500;
+            color: #0f172a;
+        }
+        .doc-item-info span {
+            font-size: 10px;
+            color: #64748b;
+        }
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8fafc;
+        }
+        .chat-header {
+            padding: 12px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chat-header p {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .chat-header span {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .rag-badge {
+            background: #f0fdf4;
+            color: #15803d;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #bbf7d0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .welcome-msg {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+        .welcome-msg i {
+            font-size: 48px;
+            color: #cbd5e1;
+            display: block;
+            margin-bottom: 16px;
+        }
+        .welcome-msg h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        .welcome-msg p { font-size: 13px; }
+        .msg-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .msg-wrap.user { align-items: flex-end; }
+        .msg-wrap.ai { align-items: flex-start; }
+        .msg-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .msg-wrap.user .msg-bubble {
+            background: #1e3a5f;
+            color: #fff;
+            border-radius: 16px 16px 2px 16px;
+        }
+        .msg-wrap.ai .msg-bubble {
+            background: #fff;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px 16px 16px 2px;
+        }
+        .msg-time {
+            font-size: 10px;
+            color: #94a3b8;
+            padding: 0 4px;
+        }
+        .source-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-top: 8px;
+            border: 1px solid #bfdbfe;
+        }
+        .ai-avatar {
+            width: 28px;
+            height: 28px;
+            background: #1e3a5f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .msg-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .msg-row.user { flex-direction: row-reverse; }
+        .input-zone {
+            padding: 16px 20px;
+            background: #fff;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .input-zone textarea {
+            flex: 1;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 13px;
+            color: #0f172a;
+            background: #f8fafc;
+            outline: none;
+            resize: none;
+            height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+            transition: border 0.2s;
+            line-height: 1.5;
+        }
+        .input-zone textarea:focus {
+            border-color: #3b82f6;
+            background: #fff;
+        }
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background: #1e3a5f;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .send-btn:hover { background: #2a4f7a; }
+        .typing {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .typing span {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="icon"><i class="fa-solid fa-brain"></i></div>
+        <div>
+            <h2>RAG Platform</h2>
+            <span>Gestion documentaire IA</span>
+        </div>
+    </div>
+    <nav>
+        <div class="nav-section">Principal</div>
+        <a href="/dashboard" class="nav-item">
+            <i class="fa-solid fa-gauge"></i> Tableau de bord
+        </a>
+        <a href="/documents" class="nav-item">
+            <i class="fa-solid fa-files"></i> Mes documents
+            <span class="nav-badge">0</span>
+        </a>
+        <a href="/chat" class="nav-item active">
+            <i class="fa-solid fa-message"></i> Chat IA
+        </a>
+        <a href="/history" class="nav-item">
+            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+        </a>
+        <div class="nav-section">Administration</div>
+        <a href="/admin/users" class="nav-item">
+            <i class="fa-solid fa-users"></i> Utilisateurs
+        </a>
+        <a href="/admin/stats" class="nav-item">
+            <i class="fa-solid fa-chart-bar"></i> Statistiques
+        </a>
+        <a href="/settings" class="nav-item">
+            <i class="fa-solid fa-gear"></i> Parametres
+        </a>
+    </nav>
+    <div class="sidebar-stats">
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-files"></i> Documents</span>
+            <b>0</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-users"></i> Utilisateurs</span>
+            <b>2</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-message"></i> Questions</span>
+            <b>0</b>
+        </div>
+    </div>
+    <div class="sidebar-user">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+            <p>Admin</p>
+            <span>Administrateur</span>
+        </div>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div class="main-content">
+    <div class="topbar">
+        <div>
+            <h1>Chat IA</h1>
+            <span>Posez vos questions sur vos documents</span>
+        </div>
+        <div class="topbar-right">
+            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none;">
+                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
+            </a>
+        </div>
+    </div>
+
+    <div class="chat-layout">
+
+        <!-- Panel documents -->
+        <div class="doc-panel">
+            <div class="doc-panel-header">
+                <i class="fa-solid fa-files"></i> Documents disponibles
+            </div>
+            <div class="doc-panel-list">
+                <!-- Etat vide -->
+                <div style="text-align:center; padding:24px 12px; color:#94a3b8;">
+                    <i class="fa-solid fa-folder-open" style="font-size:32px; display:block; margin-bottom:10px;"></i>
+                    <p style="font-size:12px;">Aucun document.<br>Uploadez d'abord vos fichiers.</p>
+                    <a href="/documents" style="display:inline-block; margin-top:10px; background:#1e3a5f; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; text-decoration:none;">
+                        <i class="fa-solid fa-upload"></i> Uploader
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel chat -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div>
+                    <p><i class="fa-solid fa-message"></i> Conversation</p>
+                    <span>L'IA repond uniquement depuis vos documents</span>
+                </div>
+                <span class="rag-badge">
+                    <i class="fa-solid fa-circle" style="font-size:7px;"></i> RAG active
+                </span>
+            </div>
+
+            <div class="messages" id="messages">
+                <!-- Message de bienvenue -->
+                <div class="welcome-msg">
+                    <i class="fa-solid fa-brain"></i>
+                    <h3>Bonjour, je suis votre assistant IA</h3>
+                    <p>Posez-moi une question sur vos documents.<br>Je repondrai uniquement a partir de leur contenu.</p>
+                </div>
+
+                <!-- Exemple de conversation -->
+                <div class="msg-row user">
+                    <div class="msg-wrap user">
+                        <div class="msg-bubble">Quelle est la marge beneficiaire du Q3 ?</div>
+                        <span class="msg-time">14:32</span>
+                    </div>
+                </div>
+
+                <div class="msg-row ai">
+                    <div class="ai-avatar"><i class="fa-solid fa-brain"></i></div>
+                    <div class="msg-wrap ai">
+                        <div class="msg-bubble">
+                            D'apres le document <b>Donnees_Ventes_Q3.xlsx</b>, la marge beneficiaire du troisieme trimestre est de <b>23,4%</b>, en hausse de 2,1 points par rapport au Q2.
+                            <br>
+                            <span class="source-chip">
+                                <i class="fa-solid fa-link"></i> Donnees_Ventes_Q3.xlsx · feuille Resultats · ligne 14
+                            </span>
+                        </div>
+                        <span class="msg-time">14:32</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone de saisie -->
+            <div class="input-zone">
+                <textarea id="questionInput" placeholder="Posez votre question sur vos documents..." onkeydown="handleKey(event)"></textarea>
+                <button class="send-btn" onclick="sendMessage()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('questionInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const messages = document.getElementById('messages');
+
+        // Supprimer le message de bienvenue si present
+        const welcome = messages.querySelector('.welcome-msg');
+        if (welcome) welcome.remove();
+
+        // Ajouter le message utilisateur
+        messages.innerHTML += `
+            <div class="msg-row user">
+                <div class="msg-wrap user">
+                    <div class="msg-bubble">${text}</div>
+                    <span class="msg-time">${getTime()}</span>
+                </div>
+            </div>`;
+
+        input.value = '';
+
+        // Simuler la frappe de l'IA
+        messages.innerHTML += `
+            <div class="msg-row ai" id="typing">
+                <div class="ai-avatar"><i class="fa-solid fa-brain"></i></div>
+                <div class="msg-wrap ai">
+                    <div class="msg-bubble">
+                        <div class="typing">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        messages.scrollTop = messages.scrollHeight;
+
+        // Simuler une reponse apres 1.5s
+        setTimeout(() => {
+            document.getElementById('typing').remove();
+            messages.innerHTML += `
+                <div class="msg-row ai">
+                    <div class="ai-avatar"><i class="fa-solid fa-brain"></i></div>
+                    <div class="msg-wrap ai">
+                        <div class="msg-bubble">
+                            Je ne trouve pas cette information dans les documents fournis.
+                            <br>
+                            <span class="source-chip"><i class="fa-solid fa-circle-exclamation"></i> Aucune source trouvee</span>
+                        </div>
+                        <span class="msg-time">${getTime()}</span>
+                    </div>
+                </div>`;
+            messages.scrollTop = messages.scrollHeight;
+        }, 1500);
+    }
+
+    function getTime() {
+        const now = new Date();
+        return now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+    }
+</script>
+
+</body>
+</html>

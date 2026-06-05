@@ -20,5 +20,10 @@ public class HomeController {
     public String documents() {
         return "documents";
     }
-    
+
+    @GetMapping("/chat")
+    public String chat() {
+        return "chat";
+    }
+
 }
