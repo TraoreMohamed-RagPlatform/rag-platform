@@ -15,4 +15,10 @@ public class HomeController {
     public String dashboard() {
         return "dashboard";
     }
+    
+    @GetMapping("/documents")
+    public String documents() {
+        return "documents";
+    }
+    
 }
