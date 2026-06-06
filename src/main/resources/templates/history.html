@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Historique - RAG Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .history-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            transition: all 0.15s;
+        }
+        .history-item:hover { border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59,130,246,0.1); }
+        .history-question {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .history-question i { color: #3b82f6; margin-top: 2px; flex-shrink: 0; }
+        .history-answer {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            padding-left: 24px;
+        }
+        .history-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-left: 24px;
+        }
+        .history-meta span { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+        .source-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid #bfdbfe;
+        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+        .empty-state i { font-size: 48px; color: #cbd5e1; display: block; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+        .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; }
+        .stat-chip {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stat-chip b { color: #0f172a; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="icon"><i class="fa-solid fa-brain"></i></div>
+        <div>
+            <h2>RAG Platform</h2>
+            <span>Gestion documentaire IA</span>
+        </div>
+    </div>
+    <nav>
+        <div class="nav-section">Principal</div>
+        <a href="/dashboard" class="nav-item">
+            <i class="fa-solid fa-gauge"></i> Tableau de bord
+        </a>
+        <a href="/documents" class="nav-item">
+            <i class="fa-solid fa-files"></i> Mes documents
+        </a>
+        <a href="/chat" class="nav-item">
+            <i class="fa-solid fa-message"></i> Chat IA
+        </a>
+        <a href="/history" class="nav-item active">
+            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+        </a>
+        <div class="nav-section">Administration</div>
+        <a href="/admin/users" class="nav-item">
+            <i class="fa-solid fa-users"></i> Utilisateurs
+        </a>
+        <a href="/admin/stats" class="nav-item">
+            <i class="fa-solid fa-chart-bar"></i> Statistiques
+        </a>
+        <a href="/settings" class="nav-item">
+            <i class="fa-solid fa-gear"></i> Parametres
+        </a>
+    </nav>
+    <div class="sidebar-stats">
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-files"></i> Documents</span>
+            <b>0</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-users"></i> Utilisateurs</span>
+            <b>2</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-message"></i> Questions</span>
+            <b th:text="${nombreQuestions}">0</b>
+        </div>
+    </div>
+    <div class="sidebar-user">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+            <p>Admin</p>
+            <span>Administrateur</span>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="topbar">
+        <div>
+            <h1>Historique</h1>
+            <span>Toutes vos questions et reponses</span>
+        </div>
+        <div class="topbar-right">
+            <a href="/chat" class="btn-primary">
+                <i class="fa-solid fa-message"></i> Nouvelle question
+            </a>
+            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none; margin-left:8px;">
+                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
+            </a>
+        </div>
+    </div>
+
+    <div class="page-body">
+
+        <div class="stats-bar">
+            <div class="stat-chip">
+                <i class="fa-solid fa-message" style="color:#3b82f6;"></i>
+                <span>Total questions : <b th:text="${nombreQuestions}">0</b></span>
+            </div>
+        </div>
+
+        <div th:if="${not #lists.isEmpty(questions)}">
+            <div class="history-item" th:each="q : ${questions}">
+                <div class="history-question">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span th:text="${q.question}">Question</span>
+                </div>
+                <div class="history-answer" th:if="${q.reponse != null}">
+                    <span th:text="${q.reponse}">Reponse</span>
+                </div>
+                <div class="history-meta">
+                    <span>
+                        <i class="fa-solid fa-clock"></i>
+                        <span th:text="${#temporals.format(q.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(questions)}">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <h3>Aucune question posee</h3>
+            <p>Votre historique apparaitra ici apres avoir pose des questions dans le Chat IA.</p>
+            <a href="/chat" style="display:inline-block; margin-top:16px; background:#1e3a5f; color:#fff; padding:10px 20px; border-radius:8px; text-decoration:none; font-size:13px;">
+                <i class="fa-solid fa-message"></i> Demarrer une conversation
+            </a>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
