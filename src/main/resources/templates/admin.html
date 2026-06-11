@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration - RAG Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .stat-card .sub {
+            font-size: 12px;
+            color: #22c55e;
+            margin-top: 4px;
+        }
+        .section-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+        }
+        .section-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .btn-add {
+            background: #1e3a5f;
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .users-table {
+            width: 100%;
+        }
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 80px;
+            padding: 10px 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 80px;
+            padding: 14px 20px;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s;
+        }
+        .table-row:last-child { border: none; }
+        .table-row:hover { background: #f8fafc; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #1e3a5f;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .user-name { font-size: 13px; font-weight: 500; color: #0f172a; }
+        .user-email { font-size: 11px; color: #64748b; }
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .role-admin { background: #eff6ff; color: #1d4ed8; }
+        .role-user { background: #f0fdf4; color: #15803d; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-active { background: #22c55e; }
+        .action-btns { display: flex; gap: 6px; }
+        .btn-sm {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.15s;
+        }
+        .btn-sm:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .empty-state i {
+            font-size: 40px;
+            color: #cbd5e1;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px;
+            width: 420px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+        }
+        .modal h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-form .fg { margin-bottom: 14px; }
+        .modal-form label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        .modal-form input,
+        .modal-form select {
+            width: 100%;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #111827;
+            background: #f9fafb;
+            outline: none;
+        }
+        .modal-form input:focus,
+        .modal-form select:focus { border-color: #3b82f6; background: #fff; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-cancel {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .btn-save {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #1e3a5f;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="icon"><i class="fa-solid fa-brain"></i></div>
+        <div>
+            <h2>RAG Platform</h2>
+            <span>Gestion documentaire IA</span>
+        </div>
+    </div>
+    <nav>
+        <div class="nav-section">Principal</div>
+        <a href="/dashboard" class="nav-item">
+            <i class="fa-solid fa-gauge"></i> Tableau de bord
+        </a>
+        <a href="/documents" class="nav-item">
+            <i class="fa-solid fa-files"></i> Mes documents
+        </a>
+        <a href="/chat" class="nav-item">
+            <i class="fa-solid fa-message"></i> Chat IA
+        </a>
+        <a href="/history" class="nav-item">
+            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+        </a>
+        <div class="nav-section">Administration</div>
+        <a href="/admin" class="nav-item active">
+            <i class="fa-solid fa-users"></i> Utilisateurs
+        </a>
+        <a href="/admin/stats" class="nav-item">
+            <i class="fa-solid fa-chart-bar"></i> Statistiques
+        </a>
+        <a href="/settings" class="nav-item">
+            <i class="fa-solid fa-gear"></i> Parametres
+        </a>
+    </nav>
+    <div class="sidebar-stats">
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-files"></i> Documents</span>
+            <b th:text="${nombreDocuments}">0</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-users"></i> Utilisateurs</span>
+            <b th:text="${nombreUsers}">0</b>
+        </div>
+        <div class="stat-mini">
+            <span><i class="fa-solid fa-message"></i> Questions</span>
+            <b th:text="${nombreQuestions}">0</b>
+        </div>
+    </div>
+    <div class="sidebar-user">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+            <p>Admin</p>
+            <span>Administrateur</span>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="topbar">
+        <div>
+            <h1>Administration</h1>
+            <span>Gestion des utilisateurs et statistiques</span>
+        </div>
+        <div class="topbar-right">
+            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none;">
+                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
+            </a>
+        </div>
+    </div>
+
+    <div class="page-body">
+
+        <!-- Alertes -->
+        <div class="alert-success" th:if="${success}">
+            <i class="fa-solid fa-circle-check"></i>
+            <span th:text="${success}"></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label"><i class="fa-solid fa-users"></i> Total utilisateurs</div>
+                <div class="value" th:text="${nombreUsers}">0</div>
+                <div class="sub">Comptes actifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="label"><i class="fa-solid fa-files"></i> Total documents</div>
+                <div class="value" th:text="${nombreDocuments}">0</div>
+                <div class="sub" th:text="${nombreDocuments + ' fichier(s) indexe(s)'}">0 fichiers</div>
+            </div>
+            <div class="stat-card">
+                <div class="label"><i class="fa-solid fa-message"></i> Total questions</div>
+                <div class="value" th:text="${nombreQuestions}">0</div>
+                <div class="sub">Questions posees</div>
+            </div>
+        </div>
+
+        <!-- Liste des utilisateurs -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3><i class="fa-solid fa-users"></i> Utilisateurs</h3>
+                <button class="btn-add" onclick="openModal()">
+                    <i class="fa-solid fa-plus"></i> Ajouter
+                </button>
+            </div>
+            <div class="users-table">
+                <div class="table-header">
+                    <span>Utilisateur</span>
+                    <span>Role</span>
+                    <span>Statut</span>
+                    <span>Date</span>
+                    <span>Actions</span>
+                </div>
+                <div th:each="u : ${users}">
+                    <div class="table-row">
+                        <div class="user-info">
+                            <div class="user-avatar"
+                                 th:text="${#strings.toUpperCase(#strings.substring(u.prenom,0,1)) + #strings.toUpperCase(#strings.substring(u.nom,0,1))}">
+                                AD
+                            </div>
+                            <div>
+                                <div class="user-name" th:text="${u.prenom + ' ' + u.nom}">Nom</div>
+                                <div class="user-email" th:text="${u.email}">email</div>
+                            </div>
+                        </div>
+                        <span>
+                            <span th:class="${u.role.name() == 'ADMIN' ? 'role-badge role-admin' : 'role-badge role-user'}"
+                                  th:text="${u.role}">ROLE</span>
+                        </span>
+                        <span>
+                            <span class="status-dot status-active"></span>
+                            Actif
+                        </span>
+                        <span th:text="${u.createdAt != null ? #temporals.format(u.createdAt, 'dd/MM/yyyy') : 'N/A'}">Date</span>
+                        <div class="action-btns">
+                            <form th:action="@{/admin/supprimer/{id}(id=${u.id})}" method="post">
+                                <button type="submit" class="btn-sm"
+                                        onclick="return confirm('Supprimer cet utilisateur ?')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="empty-state" th:if="${#lists.isEmpty(users)}">
+                    <i class="fa-solid fa-users"></i>
+                    <p>Aucun utilisateur trouve.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal ajouter utilisateur -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <h3><i class="fa-solid fa-user-plus"></i> Ajouter un utilisateur</h3>
+        <form th:action="@{/admin/ajouter}" method="post" class="modal-form">
+            <div class="fg">
+                <label>Prenom</label>
+                <input type="text" name="prenom" placeholder="Prenom" required>
+            </div>
+            <div class="fg">
+                <label>Nom</label>
+                <input type="text" name="nom" placeholder="Nom" required>
+            </div>
+            <div class="fg">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="email@example.com" required>
+            </div>
+            <div class="fg">
+                <label>Mot de passe</label>
+                <input type="password" name="password" placeholder="Mot de passe" required>
+            </div>
+            <div class="fg">
+                <label>Role</label>
+                <select name="role">
+                    <option value="USER">Utilisateur</option>
+                    <option value="ADMIN">Administrateur</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn-save">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal() { document.getElementById('addModal').classList.add('open'); }
+    function closeModal() { document.getElementById('addModal').classList.remove('open'); }
+</script>
+
+</body>
+</html>
