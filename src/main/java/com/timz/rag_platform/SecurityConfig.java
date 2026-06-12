@@ -87,8 +87,21 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(logout -> logout
+                .logoutUrl("/logout")
                 .logoutSuccessUrl("/login")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
                 .permitAll()
+            )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers(
+                    "/logout",
+                    "/api/chat",
+                    "/documents/upload",
+                    "/documents/supprimer/**",
+                    "/admin/ajouter",
+                    "/admin/supprimer/**"
+                )
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp

@@ -89,7 +89,6 @@
         .doc-info span { font-size: 11px; color: #64748b; }
         .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
         .badge-green { background: #dcfce7; color: #16a34a; }
-        .badge-amber { background: #fef3c7; color: #d97706; }
         .doc-actions { display: flex; gap: 6px; }
         .btn-icon { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: #64748b; transition: all 0.15s; }
         .btn-icon:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
@@ -102,52 +101,51 @@
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-logo">
         <div class="icon"><i class="fa-solid fa-brain"></i></div>
         <div>
             <h2>RAG Platform</h2>
-            <span>Gestion documentaire IA</span>
+            <span data-i18n="tagline">Gestion documentaire IA</span>
         </div>
     </div>
     <nav>
-        <div class="nav-section">Principal</div>
+        <div class="nav-section" data-i18n="principal">Principal</div>
         <a href="/dashboard" class="nav-item">
-            <i class="fa-solid fa-gauge"></i> Tableau de bord
+            <i class="fa-solid fa-gauge"></i> <span data-i18n="dashboard">Tableau de bord</span>
         </a>
         <a href="/documents" class="nav-item active">
-            <i class="fa-solid fa-files"></i> Mes documents
+            <i class="fa-solid fa-files"></i> <span data-i18n="documents">Mes documents</span>
             <span class="nav-badge" th:text="${nombreDocuments}">0</span>
         </a>
         <a href="/chat" class="nav-item">
-            <i class="fa-solid fa-message"></i> Chat IA
+            <i class="fa-solid fa-message"></i> <span data-i18n="chat">Chat IA</span>
         </a>
         <a href="/history" class="nav-item">
-            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+            <i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="history">Historique</span>
         </a>
-        <div class="nav-section">Administration</div>
+        <div class="nav-section" data-i18n="administration">Administration</div>
         <a href="/admin/users" class="nav-item">
-            <i class="fa-solid fa-users"></i> Utilisateurs
+            <i class="fa-solid fa-users"></i> <span data-i18n="users">Utilisateurs</span>
         </a>
         <a href="/admin/stats" class="nav-item">
-            <i class="fa-solid fa-chart-bar"></i> Statistiques
+            <i class="fa-solid fa-chart-bar"></i> <span data-i18n="stats">Statistiques</span>
         </a>
         <a href="/settings" class="nav-item">
-            <i class="fa-solid fa-gear"></i> Parametres
+            <i class="fa-solid fa-gear"></i> <span data-i18n="settings">Parametres</span>
         </a>
     </nav>
     <div class="sidebar-stats">
         <div class="stat-mini">
-            <span><i class="fa-solid fa-files"></i> Documents</span>
+            <span><i class="fa-solid fa-files"></i> <span data-i18n="documents">Documents</span></span>
             <b th:text="${nombreDocuments}">0</b>
         </div>
         <div class="stat-mini">
-            <span><i class="fa-solid fa-users"></i> Utilisateurs</span>
+            <span><i class="fa-solid fa-users"></i> <span data-i18n="users">Utilisateurs</span></span>
             <b>2</b>
         </div>
         <div class="stat-mini">
-            <span><i class="fa-solid fa-message"></i> Questions</span>
+            <span><i class="fa-solid fa-message"></i> <span data-i18n="questions">Questions</span></span>
             <b>0</b>
         </div>
     </div>
@@ -155,28 +153,34 @@
         <div class="avatar">AD</div>
         <div class="user-info">
             <p>Admin</p>
-            <span>Administrateur</span>
+            <span data-i18n="administrator">Administrateur</span>
         </div>
     </div>
 </div>
 
-<!-- Contenu principal -->
 <div class="main-content">
     <div class="topbar">
         <div>
-            <h1>Mes Documents</h1>
-            <span>Gerez et interrogez vos documents</span>
+            <h1 data-i18n="myDocuments">Mes Documents</h1>
+            <span data-i18n="manageDocuments">Gerez et interrogez vos documents</span>
         </div>
         <div class="topbar-right">
-            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none;">
-                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
-            </a>
+            <div style="display:flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:20px;padding:4px 8px;margin-right:8px;">
+                <i class="fa-solid fa-globe" style="color:#64748b;font-size:12px;"></i>
+                <button onclick="setLang('fr')" id="btn-fr" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;">FR</button>
+                <button onclick="setLang('en')" id="btn-en" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;">EN</button>
+                <button onclick="setLang('ar')" id="btn-ar" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;">ع</button>
+            </div>
+            <form action="/logout" method="post" style="display:inline">
+                <button type="submit" style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="logout">Deconnexion</span>
+                </button>
+            </form>
         </div>
     </div>
 
     <div class="page-body">
 
-        <!-- Alertes -->
         <div class="alert-success" th:if="${success}">
             <i class="fa-solid fa-circle-check"></i>
             <span th:text="${success}"></span>
@@ -186,15 +190,14 @@
             <span th:text="${error}"></span>
         </div>
 
-        <!-- Zone upload -->
         <form th:action="@{/documents/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
             <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
-                <h3>Glissez vos fichiers ici</h3>
-                <p>Supporte PDF, Excel (.xlsx) et Images (PNG, JPG)</p>
-                <p style="font-size:12px; margin-top:4px;">Taille maximale : 50 MB par fichier</p>
+                <h3 data-i18n="dropFiles">Glissez vos fichiers ici</h3>
+                <p data-i18n="supportedFormats">Supporte PDF, Excel (.xlsx) et Images (PNG, JPG)</p>
+                <p style="font-size:12px; margin-top:4px;" data-i18n="maxSize">Taille maximale : 50 MB par fichier</p>
                 <button type="button" class="btn-upload-trigger">
-                    <i class="fa-solid fa-folder-open"></i> Parcourir les fichiers
+                    <i class="fa-solid fa-folder-open"></i> <span data-i18n="browseFiles">Parcourir les fichiers</span>
                 </button>
                 <input type="file" id="fileInput" name="fichier" style="display:none"
                        accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg"
@@ -202,29 +205,26 @@
             </div>
         </form>
 
-        <!-- Filtres -->
         <div class="filters-bar">
-            <span class="filter-tag active">Tous</span>
+            <span class="filter-tag active" data-i18n="all">Tous</span>
             <span class="filter-tag">PDF</span>
             <span class="filter-tag">Excel</span>
-            <span class="filter-tag">Images</span>
+            <span class="filter-tag" data-i18n="images">Images</span>
             <div class="search-input">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" placeholder="Rechercher un document...">
+                <input type="text" id="searchInput" data-i18n-placeholder="searchDoc" placeholder="Rechercher un document...">
             </div>
         </div>
 
-        <!-- Table des documents -->
         <div class="doc-table">
             <div class="doc-table-header">
-                <span>Nom du fichier</span>
-                <span>Type</span>
-                <span>Taille</span>
-                <span>Statut</span>
-                <span>Actions</span>
+                <span data-i18n="fileName">Nom du fichier</span>
+                <span data-i18n="type">Type</span>
+                <span data-i18n="size">Taille</span>
+                <span data-i18n="status">Statut</span>
+                <span data-i18n="actions">Actions</span>
             </div>
 
-            <!-- Liste des documents -->
             <div th:each="doc : ${documents}">
                 <div class="doc-row">
                     <div class="doc-name">
@@ -253,11 +253,10 @@
                 </div>
             </div>
 
-            <!-- Etat vide -->
             <div class="empty-state" th:if="${#lists.isEmpty(documents)}">
                 <i class="fa-solid fa-folder-open"></i>
-                <h3>Aucun document uploade</h3>
-                <p>Commencez par uploader vos premiers documents PDF, Excel ou images.</p>
+                <h3 data-i18n="noDocuments">Aucun document uploade</h3>
+                <p data-i18n="startUpload">Commencez par uploader vos premiers documents PDF, Excel ou images.</p>
             </div>
         </div>
     </div>
@@ -270,7 +269,102 @@
             tag.classList.add('active');
         });
     });
-</script>
 
+    const translations = {
+        fr: {
+            tagline: 'Gestion documentaire IA',
+            principal: 'Principal', administration: 'Administration',
+            dashboard: 'Tableau de bord', documents: 'Mes documents',
+            chat: 'Chat IA', history: 'Historique',
+            users: 'Utilisateurs', stats: 'Statistiques',
+            settings: 'Parametres', logout: 'Deconnexion',
+            administrator: 'Administrateur', questions: 'Questions',
+            myDocuments: 'Mes Documents', manageDocuments: 'Gerez et interrogez vos documents',
+            dropFiles: 'Glissez vos fichiers ici',
+            supportedFormats: 'Supporte PDF, Excel (.xlsx) et Images (PNG, JPG)',
+            maxSize: 'Taille maximale : 50 MB par fichier',
+            browseFiles: 'Parcourir les fichiers',
+            all: 'Tous', images: 'Images',
+            searchDoc: 'Rechercher un document...',
+            fileName: 'Nom du fichier', type: 'Type',
+            size: 'Taille', status: 'Statut', actions: 'Actions',
+            noDocuments: 'Aucun document uploade',
+            startUpload: 'Commencez par uploader vos premiers documents PDF, Excel ou images.',
+            dir: 'ltr'
+        },
+        en: {
+            tagline: 'AI Document Management',
+            principal: 'Main', administration: 'Administration',
+            dashboard: 'Dashboard', documents: 'My documents',
+            chat: 'AI Chat', history: 'History',
+            users: 'Users', stats: 'Statistics',
+            settings: 'Settings', logout: 'Logout',
+            administrator: 'Administrator', questions: 'Questions',
+            myDocuments: 'My Documents', manageDocuments: 'Manage and query your documents',
+            dropFiles: 'Drop your files here',
+            supportedFormats: 'Supports PDF, Excel (.xlsx) and Images (PNG, JPG)',
+            maxSize: 'Maximum size: 50 MB per file',
+            browseFiles: 'Browse files',
+            all: 'All', images: 'Images',
+            searchDoc: 'Search a document...',
+            fileName: 'File name', type: 'Type',
+            size: 'Size', status: 'Status', actions: 'Actions',
+            noDocuments: 'No document uploaded',
+            startUpload: 'Start by uploading your first PDF, Excel or image documents.',
+            dir: 'ltr'
+        },
+        ar: {
+            tagline: 'إدارة المستندات بالذكاء الاصطناعي',
+            principal: 'الرئيسية', administration: 'الإدارة',
+            dashboard: 'لوحة التحكم', documents: 'مستنداتي',
+            chat: 'محادثة الذكاء الاصطناعي', history: 'السجل',
+            users: 'المستخدمون', stats: 'الإحصائيات',
+            settings: 'الإعدادات', logout: 'تسجيل الخروج',
+            administrator: 'مدير', questions: 'الأسئلة',
+            myDocuments: 'مستنداتي', manageDocuments: 'إدارة واستعلام مستنداتك',
+            dropFiles: 'اسحب ملفاتك هنا',
+            supportedFormats: 'يدعم PDF و Excel و الصور',
+            maxSize: 'الحجم الأقصى: 50 ميجابايت لكل ملف',
+            browseFiles: 'تصفح الملفات',
+            all: 'الكل', images: 'الصور',
+            searchDoc: 'البحث عن مستند...',
+            fileName: 'اسم الملف', type: 'النوع',
+            size: 'الحجم', status: 'الحالة', actions: 'الإجراءات',
+            noDocuments: 'لا توجد مستندات مرفوعة',
+            startUpload: 'ابدأ برفع مستنداتك الأولى PDF أو Excel أو الصور.',
+            dir: 'rtl'
+        }
+    };
+
+    function setLang(lang) {
+        localStorage.setItem('lang', lang);
+        const t = translations[lang];
+        document.documentElement.dir = t.dir;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key]) el.textContent = t[key];
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (t[key]) el.placeholder = t[key];
+        });
+        document.querySelectorAll('.lang-btn-global').forEach(btn => {
+            btn.style.background = 'none';
+            btn.style.color = '#64748b';
+            btn.style.fontWeight = 'normal';
+        });
+        const active = document.getElementById('btn-' + lang);
+        if (active) {
+            active.style.background = '#1e3a5f';
+            active.style.color = '#fff';
+            active.style.fontWeight = '600';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const lang = localStorage.getItem('lang') || 'fr';
+        setLang(lang);
+    });
+</script>
 </body>
 </html>

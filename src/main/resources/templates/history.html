@@ -132,13 +132,11 @@
             <h1>Historique</h1>
             <span>Toutes vos questions et reponses</span>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right"><div style="display:flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:20px;padding:4px 8px;margin-right:8px;"><i class="fa-solid fa-globe" style="color:#64748b;font-size:12px;"></i><button onclick="setLang('fr')" id="btn-fr" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;background:#1e3a5f;color:#fff;font-weight:600;">FR</button><button onclick="setLang('en')" id="btn-en" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;background:none;color:#64748b;">EN</button><button onclick="setLang('ar')" id="btn-ar" class="lang-btn-global" style="padding:3px 8px;border-radius:12px;font-size:11px;border:none;cursor:pointer;background:none;color:#64748b;">?</button></div>
             <a href="/chat" class="btn-primary">
                 <i class="fa-solid fa-message"></i> Nouvelle question
             </a>
-            <a href="/logout" style="color:#64748b; font-size:13px; text-decoration:none; margin-left:8px;">
-                <i class="fa-solid fa-right-from-bracket"></i> Deconnexion
-            </a>
+            <form action="/logout" method="post" style="display:inline"><button type="submit" style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i> Deconnexion</button></form>
         </div>
     </div>
 
@@ -181,5 +179,8 @@
     </div>
 </div>
 
-</body>
+<script src="/js/lang.js"></script></body>
 </html>
+
+
+
