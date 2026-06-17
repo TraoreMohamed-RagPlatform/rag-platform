@@ -44,10 +44,7 @@ public class HomeController {
         return "dashboard";
     }
 
-    @GetMapping("/chat")
-    public String chat() {
-        return "chat";
-    }
+   
 
     @GetMapping("/history")
     public String history(Model model, Authentication auth) {

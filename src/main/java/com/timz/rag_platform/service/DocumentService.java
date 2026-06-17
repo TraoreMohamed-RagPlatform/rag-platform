@@ -19,21 +19,17 @@ public class DocumentService {
     private final String UPLOAD_DIR = "uploads/";
 
     public Document sauvegarderDocument(MultipartFile fichier, User user) throws IOException {
-        // Créer le dossier uploads s'il n'existe pas
         Path uploadPath = Paths.get(UPLOAD_DIR);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        // Sauvegarder le fichier sur le disque
         String nomFichier = System.currentTimeMillis() + "_" + fichier.getOriginalFilename();
         Path cheminFichier = uploadPath.resolve(nomFichier);
         Files.copy(fichier.getInputStream(), cheminFichier, StandardCopyOption.REPLACE_EXISTING);
 
-        // Déterminer le type
         String type = determinerType(fichier.getOriginalFilename());
 
-        // Créer l'entité Document
         Document document = new Document();
         document.setNom(fichier.getOriginalFilename());
         document.setType(type);
@@ -60,6 +56,41 @@ public class DocumentService {
 
     public void supprimerDocument(Long id) {
         documentRepository.deleteById(id);
+    }
+
+    public Document modifierDocument(Long id, String nouveauNom, MultipartFile nouveauFichier) throws IOException {
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document non trouve avec id : " + id));
+
+        if (nouveauNom != null && !nouveauNom.isBlank()) {
+            document.setNom(nouveauNom);
+        }
+
+        if (nouveauFichier != null && !nouveauFichier.isEmpty()) {
+            Path ancienChemin = Paths.get(document.getCheminFichier());
+            Files.deleteIfExists(ancienChemin);
+
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            String nomFichier = System.currentTimeMillis() + "_" + nouveauFichier.getOriginalFilename();
+            Path nouveauChemin = uploadPath.resolve(nomFichier);
+            Files.copy(nouveauFichier.getInputStream(), nouveauChemin, StandardCopyOption.REPLACE_EXISTING);
+
+            document.setCheminFichier(nouveauChemin.toString());
+            document.setTaille(nouveauFichier.getSize());
+            document.setType(determinerType(nouveauFichier.getOriginalFilename()));
+            document.setStatut(Document.Statut.INDEXE);
+        }
+
+        return documentRepository.save(document);
+    }
+
+    public void supprimerPlusieursDocuments(List<Long> ids) {
+        for (Long id : ids) {
+            documentRepository.deleteById(id);
+        }
     }
 
     private String determinerType(String nomFichier) {
