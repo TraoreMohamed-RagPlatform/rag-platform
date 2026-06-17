@@ -38,16 +38,23 @@
             padding: 8px 10px;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.15s, border 0.15s;
             margin-bottom: 4px;
+            border: 1px solid transparent;
         }
         .doc-item:hover { background: #f1f5f9; }
+        .doc-item.active { background: #eff6ff; border-color: #93c5fd; }
+        .doc-item.indexing { background: #fffbeb; border-color: #fcd34d; }
         .file-ic { width: 32px; height: 36px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
         .pdf-ic { background: #fee2e2; color: #dc2626; }
         .xls-ic { background: #dcfce7; color: #16a34a; }
         .img-ic { background: #fef3c7; color: #d97706; }
-        .doc-item-info p { font-size: 12px; font-weight: 500; color: #0f172a; }
+        .doc-item-info { flex: 1; min-width: 0; }
+        .doc-item-info p { font-size: 12px; font-weight: 500; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .doc-item-info span { font-size: 10px; color: #64748b; }
+        .doc-item-status { font-size: 13px; flex-shrink: 0; }
+        .doc-item.active .doc-item-status { color: #1d4ed8; }
+        .doc-item.indexing .doc-item-status { color: #d97706; }
         .chat-panel {
             flex: 1;
             display: flex;
@@ -61,6 +68,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
         }
         .chat-header p { font-size: 13px; font-weight: 600; color: #0f172a; }
         .chat-header span { font-size: 11px; color: #64748b; }
@@ -74,7 +82,22 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            flex-shrink: 0;
         }
+        .rag-badge.indexing { background: #fffbeb; color: #b45309; border-color: #fcd34d; }
+        .active-doc-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #bfdbfe;
+            max-width: 220px;
+        }
+        .active-doc-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .messages {
             flex: 1;
             padding: 20px;
@@ -145,6 +168,7 @@
             line-height: 1.5;
         }
         .input-zone textarea:focus { border-color: #3b82f6; background: #fff; }
+        .input-zone textarea:disabled { background: #f1f5f9; cursor: not-allowed; }
         .send-btn {
             width: 44px;
             height: 44px;
@@ -167,6 +191,18 @@
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        .indexing-banner {
+            background: #fffbeb;
+            color: #b45309;
+            font-size: 12px;
+            padding: 8px 20px;
+            border-bottom: 1px solid #fcd34d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .indexing-banner i { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -207,7 +243,7 @@
     <div class="sidebar-stats">
         <div class="stat-mini">
             <span><i class="fa-solid fa-files"></i> <span data-i18n="documents">Documents</span></span>
-            <b>0</b>
+            <b th:text="${documents != null ? documents.size() : 0}">0</b>
         </div>
         <div class="stat-mini">
             <span><i class="fa-solid fa-users"></i> <span data-i18n="users">Utilisateurs</span></span>
@@ -254,23 +290,43 @@
                 <i class="fa-solid fa-files"></i> <span data-i18n="availableDocs">Documents disponibles</span>
             </div>
             <div class="doc-panel-list" id="docList">
-                <div style="text-align:center; padding:24px 12px; color:#94a3b8;">
+                <div th:if="${#lists.isEmpty(documents)}" style="text-align:center; padding:24px 12px; color:#94a3b8;">
                     <i class="fa-solid fa-folder-open" style="font-size:32px; display:block; margin-bottom:10px;"></i>
                     <p style="font-size:12px;" data-i18n="noDocMsg">Aucun document. Uploadez d'abord vos fichiers.</p>
                     <a href="/documents" style="display:inline-block; margin-top:10px; background:#1e3a5f; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; text-decoration:none;">
                         <i class="fa-solid fa-upload"></i> <span data-i18n="upload">Uploader</span>
                     </a>
                 </div>
+
+                <div th:each="doc : ${documents}"
+                     class="doc-item"
+                     th:attr="data-id=${doc.id},data-nom=${doc.nom},data-type=${doc.type}"
+                     onclick="selectionnerDocument(this)">
+                    <div th:class="${'file-ic ' + (doc.type == 'PDF' ? 'pdf-ic' : (doc.type == 'EXCEL' ? 'xls-ic' : 'img-ic'))}">
+                        <i th:class="${doc.type == 'PDF' ? 'fa-solid fa-file-pdf' : (doc.type == 'EXCEL' ? 'fa-solid fa-file-excel' : 'fa-solid fa-image')}"></i>
+                    </div>
+                    <div class="doc-item-info">
+                        <p th:text="${doc.nom}">Nom du fichier</p>
+                        <span th:text="${doc.type}">PDF</span>
+                    </div>
+                    <i class="fa-solid fa-circle-check doc-item-status" style="display:none;"></i>
+                </div>
             </div>
         </div>
 
         <div class="chat-panel">
+            <div class="indexing-banner" id="indexingBanner" style="display:none;">
+                <i class="fa-solid fa-spinner"></i>
+                <span id="indexingText">Indexation en cours...</span>
+            </div>
+
             <div class="chat-header">
                 <div>
                     <p><i class="fa-solid fa-message"></i> <span data-i18n="conversation">Conversation</span></p>
-                    <span data-i18n="aiOnly">L'IA repond uniquement depuis vos documents</span>
+                    <span data-i18n="aiOnly" id="aiSubtext">L'IA repond uniquement depuis vos documents</span>
                 </div>
-                <span class="rag-badge">
+                <div id="activeDocChip"></div>
+                <span class="rag-badge" id="ragBadge">
                     <i class="fa-solid fa-circle" style="font-size:7px;"></i> RAG active
                 </span>
             </div>
@@ -279,15 +335,15 @@
                 <div class="welcome-msg" id="welcomeMsg">
                     <i class="fa-solid fa-brain"></i>
                     <h3 data-i18n="welcomeAI">Bonjour, je suis votre assistant IA</h3>
-                    <p data-i18n="welcomeAIText">Posez-moi une question sur vos documents.</p>
+                    <p data-i18n="welcomeAIText">Selectionnez un document a gauche pour commencer.</p>
                 </div>
             </div>
 
             <div class="input-zone">
                 <textarea id="questionInput" data-i18n-placeholder="askQuestion"
-                    placeholder="Posez votre question sur vos documents..."
-                    onkeydown="handleKey(event)"></textarea>
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                    placeholder="Selectionnez d'abord un document..."
+                    onkeydown="handleKey(event)" disabled></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
@@ -295,7 +351,59 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+    let documentActifId = null;
+    let documentActifNom = null;
+    const docIdPreselectionne = /*[[${docSelectionne != null ? docSelectionne.id : null}]]*/ null;
+
+    function selectionnerDocument(el) {
+        const id = el.dataset.id;
+        const nom = el.dataset.nom;
+
+        document.querySelectorAll('.doc-item').forEach(item => {
+            item.classList.remove('active', 'indexing');
+            const statusIcon = item.querySelector('.doc-item-status');
+            statusIcon.style.display = 'none';
+        });
+
+        el.classList.add('indexing');
+        const statusIcon = el.querySelector('.doc-item-status');
+        statusIcon.className = 'fa-solid fa-spinner doc-item-status';
+        statusIcon.style.display = 'inline-block';
+
+        document.getElementById('indexingBanner').style.display = 'flex';
+        document.getElementById('indexingText').textContent = 'Indexation de "' + nom + '" en cours...';
+        document.getElementById('questionInput').disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('ragBadge').classList.add('indexing');
+
+        setTimeout(() => {
+            documentActifId = id;
+            documentActifNom = nom;
+
+            el.classList.remove('indexing');
+            el.classList.add('active');
+            statusIcon.className = 'fa-solid fa-circle-check doc-item-status';
+
+            document.getElementById('indexingBanner').style.display = 'none';
+            document.getElementById('ragBadge').classList.remove('indexing');
+
+            const chip = document.getElementById('activeDocChip');
+            chip.innerHTML = `<span class="active-doc-chip"><i class="fa-solid fa-file"></i><span>${nom}</span></span>`;
+
+            const input = document.getElementById('questionInput');
+            input.disabled = false;
+            input.placeholder = 'Posez votre question sur ' + nom + '...';
+            document.getElementById('sendBtn').disabled = false;
+
+            const welcome = document.getElementById('welcomeMsg');
+            if (welcome) {
+                welcome.querySelector('h3').textContent = 'Document indexe !';
+                welcome.querySelector('p').textContent = 'Posez votre question sur "' + nom + '".';
+            }
+        }, 900);
+    }
+
     function handleKey(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -306,7 +414,7 @@
     async function sendMessage() {
         const input = document.getElementById('questionInput');
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || !documentActifId) return;
 
         const messages = document.getElementById('messages');
         const sendBtn = document.getElementById('sendBtn');
@@ -338,11 +446,10 @@
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: text })
+                body: JSON.stringify({ question: text, documentId: documentActifId })
             });
 
             const data = await response.json();
-            console.log('Reponse API:', JSON.stringify(data));
             document.getElementById('typing').remove();
 
             const reponse = data.reponse || data.message || data.response || 'Pas de reponse';
@@ -372,6 +479,7 @@
         }
 
         sendBtn.disabled = false;
+        document.getElementById('questionInput').focus();
         messages.scrollTop = messages.scrollHeight;
     }
 
@@ -379,6 +487,13 @@
         const now = new Date();
         return now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (docIdPreselectionne) {
+            const item = document.querySelector(`.doc-item[data-id="${docIdPreselectionne}"]`);
+            if (item) selectionnerDocument(item);
+        }
+    });
 
     const translations = {
         fr: {
@@ -391,9 +506,9 @@
             availableDocs: 'Documents disponibles',
             noDocMsg: 'Aucun document. Uploadez d abord vos fichiers.',
             upload: 'Uploader', conversation: 'Conversation',
-            aiOnly: 'L IA repond uniquement depuis vos documents',
+            aiOnly: 'L IA repond uniquement depuis le document selectionne',
             welcomeAI: 'Bonjour, je suis votre assistant IA',
-            welcomeAIText: 'Posez-moi une question sur vos documents.',
+            welcomeAIText: 'Selectionnez un document a gauche pour commencer.',
             askQuestion: 'Posez votre question sur vos documents...', dir: 'ltr'
         },
         en: {
@@ -406,9 +521,9 @@
             availableDocs: 'Available documents',
             noDocMsg: 'No documents. Upload your files first.',
             upload: 'Upload', conversation: 'Conversation',
-            aiOnly: 'AI responds only from your documents',
+            aiOnly: 'AI responds only from the selected document',
             welcomeAI: 'Hello, I am your AI assistant',
-            welcomeAIText: 'Ask me a question about your documents.',
+            welcomeAIText: 'Select a document on the left to start.',
             askQuestion: 'Ask your question about your documents...', dir: 'ltr'
         },
         ar: {
@@ -421,9 +536,9 @@
             availableDocs: 'المستندات المتاحة',
             noDocMsg: 'لا توجد مستندات. ارفع ملفاتك أولاً.',
             upload: 'رفع', conversation: 'محادثة',
-            aiOnly: 'يجيب الذكاء الاصطناعي فقط من مستنداتك',
+            aiOnly: 'يجيب الذكاء الاصطناعي فقط من المستند المحدد',
             welcomeAI: 'مرحباً، أنا مساعدك الذكي',
-            welcomeAIText: 'اطرح علي سؤالاً حول مستنداتك.',
+            welcomeAIText: 'حدد مستنداً على اليسار للبدء.',
             askQuestion: 'اطرح سؤالك حول مستنداتك...', dir: 'rtl'
         }
     };
@@ -438,7 +553,7 @@
         });
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
-            if (t[key]) el.placeholder = t[key];
+            if (t[key] && !el.disabled) el.placeholder = t[key];
         });
         document.querySelectorAll('.lang-btn-global').forEach(btn => {
             btn.style.background = 'none';

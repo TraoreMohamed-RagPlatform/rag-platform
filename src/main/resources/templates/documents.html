@@ -59,7 +59,7 @@
         .doc-table { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
         .doc-table-header {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            grid-template-columns: 30px 2fr 1fr 1fr 1fr 110px;
             padding: 12px 20px;
             background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
@@ -68,10 +68,11 @@
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            align-items: center;
         }
         .doc-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            grid-template-columns: 30px 2fr 1fr 1fr 1fr 110px;
             padding: 14px 20px;
             border-bottom: 1px solid #f1f5f9;
             align-items: center;
@@ -92,11 +93,80 @@
         .doc-actions { display: flex; gap: 6px; }
         .btn-icon { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; color: #64748b; transition: all 0.15s; }
         .btn-icon:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+        .btn-icon.edit:hover { background: #dbeafe; color: #1e3a5f; border-color: #93c5fd; }
+        .btn-icon.chat:hover { background: #dcfce7; color: #16a34a; border-color: #86efac; }
         .empty-state { text-align: center; padding: 48px 20px; color: #64748b; }
         .empty-state i { font-size: 48px; color: #cbd5e1; display: block; margin-bottom: 16px; }
         .empty-state h3 { font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 8px; }
         .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 16px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 16px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+        .row-checkbox, .header-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #1e3a5f; }
+
+        .bulk-actions-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #dc2626;
+        }
+        .bulk-actions-bar.show { display: flex; }
+        .btn-bulk-delete {
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+        }
+        .modal-box h3 { font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .modal-box label { font-size: 12px; font-weight: 500; color: #64748b; display: block; margin-bottom: 6px; }
+        .modal-box input[type="text"] {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            box-sizing: border-box;
+        }
+        .modal-box input[type="file"] { margin-bottom: 14px; font-size: 13px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+        .btn-modal-cancel {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 8px 16px; font-size: 13px; cursor: pointer; color: #64748b;
+        }
+        .btn-modal-save {
+            background: #1e3a5f; color: #fff; border: none; border-radius: 8px;
+            padding: 8px 16px; font-size: 13px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -206,18 +276,28 @@
         </form>
 
         <div class="filters-bar">
-            <span class="filter-tag active" data-i18n="all">Tous</span>
-            <span class="filter-tag">PDF</span>
-            <span class="filter-tag">Excel</span>
-            <span class="filter-tag" data-i18n="images">Images</span>
+            <span class="filter-tag active" data-filter="all" data-i18n="all">Tous</span>
+            <span class="filter-tag" data-filter="PDF">PDF</span>
+            <span class="filter-tag" data-filter="EXCEL">Excel</span>
+            <span class="filter-tag" data-filter="IMAGE" data-i18n="images">Images</span>
             <div class="search-input">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="searchInput" data-i18n-placeholder="searchDoc" placeholder="Rechercher un document...">
             </div>
         </div>
 
+        <div class="bulk-actions-bar" id="bulkActionsBar">
+            <span id="bulkCount">0 document(s) selectionne(s)</span>
+            <form id="bulkDeleteForm" th:action="@{/documents/supprimer-multiple}" method="post">
+                <button type="submit" class="btn-bulk-delete" onclick="return confirm('Supprimer les documents selectionnes ?')">
+                    <i class="fa-solid fa-trash"></i> Supprimer la selection
+                </button>
+            </form>
+        </div>
+
         <div class="doc-table">
             <div class="doc-table-header">
+                <input type="checkbox" class="header-checkbox" id="selectAll" onclick="toggleAll(this)">
                 <span data-i18n="fileName">Nom du fichier</span>
                 <span data-i18n="type">Type</span>
                 <span data-i18n="size">Taille</span>
@@ -225,8 +305,9 @@
                 <span data-i18n="actions">Actions</span>
             </div>
 
-            <div th:each="doc : ${documents}">
+            <div th:each="doc : ${documents}" class="doc-row-wrapper" th:attr="data-type=${doc.type}">
                 <div class="doc-row">
+                    <input type="checkbox" class="row-checkbox" th:value="${doc.id}" onclick="updateBulkBar()">
                     <div class="doc-name">
                         <div th:class="${'file-icon ' + (doc.type == 'PDF' ? 'pdf' : (doc.type == 'EXCEL' ? 'excel' : (doc.type == 'IMAGE' ? 'image' : 'autre')))}">
                             <i th:class="${doc.type == 'PDF' ? 'fa-solid fa-file-pdf' : (doc.type == 'EXCEL' ? 'fa-solid fa-file-excel' : (doc.type == 'IMAGE' ? 'fa-solid fa-image' : 'fa-solid fa-file'))}"></i>
@@ -243,7 +324,17 @@
                         <span th:text="${doc.statut}">INDEXE</span>
                     </span>
                     <div class="doc-actions">
-                        <form th:action="@{/documents/supprimer/{id}(id=${doc.id})}" method="post">
+                        <button type="button" class="btn-icon edit" title="Modifier"
+                                th:attr="data-id=${doc.id},data-nom=${doc.nom}"
+                                onclick="openEditModal(this.dataset.id, this.dataset.nom)">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" class="btn-icon chat" title="Chatbot"
+                                th:attr="data-id=${doc.id}"
+                                onclick="window.location.href='/chat?doc=' + this.dataset.id">
+                            <i class="fa-solid fa-robot"></i>
+                        </button>
+                        <form th:action="@{/documents/supprimer/{id}(id=${doc.id})}" method="post" style="display:inline">
                             <button type="submit" class="btn-icon" title="Supprimer"
                                     onclick="return confirm('Supprimer ce document ?')">
                                 <i class="fa-solid fa-trash"></i>
@@ -259,16 +350,92 @@
                 <p data-i18n="startUpload">Commencez par uploader vos premiers documents PDF, Excel ou images.</p>
             </div>
         </div>
+
+        <!-- Modal de modification -->
+        <div class="modal-overlay" id="editModalOverlay">
+            <div class="modal-box">
+                <h3><i class="fa-solid fa-pen"></i> Modifier le document</h3>
+                <form id="editForm" method="post" enctype="multipart/form-data">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <label>Nom du fichier</label>
+                    <input type="text" name="nom" id="editNomInput" required>
+                    <label>Remplacer le fichier (optionnel)</label>
+                    <input type="file" name="fichier" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg">
+                    <div class="modal-footer">
+                        <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Annuler</button>
+                        <button type="submit" class="btn-modal-save">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+    let activeFilter = 'all';
+
+    function applyFilters() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        document.querySelectorAll('.doc-row-wrapper').forEach(row => {
+            const nomEl = row.querySelector('.doc-info p');
+            const nom = nomEl ? nomEl.textContent.toLowerCase() : '';
+            const type = row.getAttribute('data-type');
+
+            const matchesSearch = nom.includes(query);
+            const matchesFilter = activeFilter === 'all' || type === activeFilter;
+
+            row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+        });
+    }
+
     document.querySelectorAll('.filter-tag').forEach(tag => {
         tag.addEventListener('click', () => {
             document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
             tag.classList.add('active');
+            activeFilter = tag.getAttribute('data-filter');
+            applyFilters();
         });
     });
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+    function toggleAll(source) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = source.checked);
+        updateBulkBar();
+    }
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        const bar = document.getElementById('bulkActionsBar');
+        const count = document.getElementById('bulkCount');
+        const form = document.getElementById('bulkDeleteForm');
+
+        form.querySelectorAll('input[name="ids"]').forEach(el => el.remove());
+
+        if (checked.length > 0) {
+            bar.classList.add('show');
+            count.textContent = checked.length + ' document(s) selectionne(s)';
+            checked.forEach(cb => {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'ids';
+                hidden.value = cb.value;
+                form.appendChild(hidden);
+            });
+        } else {
+            bar.classList.remove('show');
+        }
+    }
+
+    function openEditModal(id, nom) {
+        document.getElementById('editNomInput').value = nom;
+        document.getElementById('editForm').action = '/documents/modifier/' + id;
+        document.getElementById('editModalOverlay').classList.add('show');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModalOverlay').classList.remove('show');
+    }
 
     const translations = {
         fr: {

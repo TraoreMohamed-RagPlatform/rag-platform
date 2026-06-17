@@ -26,9 +26,8 @@ public class DocumentController {
     @GetMapping("/documents")
     public String documents(Model model, Authentication auth) {
         Optional<User> userOpt = userRepository.findByEmail(auth.getName());
-        
+
         if (userOpt.isEmpty()) {
-            // Créer l'utilisateur dans la BD s'il n'existe pas
             User newUser = new User();
             newUser.setEmail(auth.getName());
             newUser.setPassword("N/A");
@@ -67,6 +66,20 @@ public class DocumentController {
         return "redirect:/documents";
     }
 
+    @PostMapping("/documents/modifier/{id}")
+    public String modifierDocument(@PathVariable Long id,
+                                    @RequestParam("nom") String nom,
+                                    @RequestParam(value = "fichier", required = false) MultipartFile fichier,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            documentService.modifierDocument(id, nom, fichier);
+            redirectAttributes.addFlashAttribute("success", "Document modifie avec succes !");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Erreur lors de la modification : " + e.getMessage());
+        }
+        return "redirect:/documents";
+    }
+
     @PostMapping("/documents/supprimer/{id}")
     public String supprimerDocument(@PathVariable Long id,
                                      RedirectAttributes redirectAttributes) {
@@ -75,6 +88,18 @@ public class DocumentController {
             redirectAttributes.addFlashAttribute("success", "Document supprime avec succes !");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Erreur lors de la suppression.");
+        }
+        return "redirect:/documents";
+    }
+
+    @PostMapping("/documents/supprimer-multiple")
+    public String supprimerPlusieursDocuments(@RequestParam("ids") List<Long> ids,
+                                               RedirectAttributes redirectAttributes) {
+        try {
+            documentService.supprimerPlusieursDocuments(ids);
+            redirectAttributes.addFlashAttribute("success", ids.size() + " document(s) supprime(s) avec succes !");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Erreur lors de la suppression multiple.");
         }
         return "redirect:/documents";
     }
