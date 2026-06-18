@@ -23,6 +23,9 @@ public class SecurityConfig {
     @Autowired
     private LoginAttemptService loginAttemptService;
 
+    @Autowired
+    private RecaptchaService recaptchaService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -54,10 +57,22 @@ public class SecurityConfig {
     public AuthenticationFailureHandler failureHandler() {
         return (request, response, exception) -> {
             String username = request.getParameter("username");
+
+            if (loginAttemptService.getAttempts(username) >= 5) {
+                String captchaToken = request.getParameter("g-recaptcha-response");
+                if (captchaToken == null || captchaToken.isBlank() || !recaptchaService.validerToken(captchaToken)) {
+                    response.sendRedirect("/login?captcha_required");
+                    return;
+                } else {
+                    loginAttemptService.resetAfterCaptcha(username);
+                }
+            }
+
             loginAttemptService.loginFailed(username);
             int remaining = loginAttemptService.getRemainingAttempts(username);
+
             if (remaining == 0) {
-                response.sendRedirect("/login?blocked");
+                response.sendRedirect("/login?captcha_required");
             } else {
                 response.sendRedirect("/login?error&remaining=" + remaining);
             }
@@ -99,13 +114,15 @@ public class SecurityConfig {
                     "/api/chat",
                     "/documents/upload",
                     "/documents/supprimer/**",
+                    "/documents/modifier/**",
+                    "/documents/supprimer-multiple",
                     "/admin/ajouter",
                     "/admin/supprimer/**"
                 )
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com fonts.googleapis.com; font-src 'self' cdnjs.cloudflare.com fonts.gstatic.com; img-src 'self' data:")
+                    .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com www.google.com www.gstatic.com; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com fonts.googleapis.com; font-src 'self' cdnjs.cloudflare.com fonts.gstatic.com; img-src 'self' data: www.gstatic.com; frame-src www.google.com;")
                 )
                 .frameOptions(frame -> frame.deny())
                 .httpStrictTransportSecurity(hsts -> hsts

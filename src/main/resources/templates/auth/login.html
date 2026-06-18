@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Connexion - RAG Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -57,6 +58,23 @@
             padding: 11px 14px; font-size: 13px; margin-bottom: 16px;
             display: flex; align-items: center; gap: 8px;
         }
+        .alert-info {
+            background: #eff6ff; color: #1d4ed8;
+            border: 1px solid #bfdbfe; border-radius: 10px;
+            padding: 11px 14px; font-size: 13px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .attempt-bar { margin-bottom: 16px; }
+        .attempt-bar-label {
+            font-size: 12px; color: #64748b; margin-bottom: 6px;
+            display: flex; justify-content: space-between;
+        }
+        .attempt-dots { display: flex; gap: 6px; }
+        .attempt-dot {
+            width: 20px; height: 8px; border-radius: 4px;
+            background: #e5e7eb; transition: background 0.2s;
+        }
+        .attempt-dot.used { background: #ef4444; }
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 7px; }
         .input-wrap { position: relative; display: flex; align-items: center; }
@@ -73,13 +91,15 @@
         .remember input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1e3a5f; cursor: pointer; }
         .forgot { font-size: 13px; color: #3b82f6; text-decoration: none; font-weight: 500; }
         .forgot:hover { text-decoration: underline; }
+        .recaptcha-wrapper { margin-bottom: 20px; display: flex; justify-content: center; }
         .btn-login {
             width: 100%; background: #1e3a5f; color: #fff; border: none;
             padding: 13px; border-radius: 10px; font-size: 15px; font-weight: 600;
             cursor: pointer; transition: background 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-login:hover { background: #2a4f7a; }
+        .btn-login:hover:not(:disabled) { background: #2a4f7a; }
+        .btn-login:disabled { background: #94a3b8; cursor: not-allowed; }
         .card-footer { text-align: center; margin-top: 24px; font-size: 12px; color: #9ca3af; }
         .modal-overlay {
             display: none; position: fixed; inset: 0;
@@ -123,6 +143,12 @@
         <span id="t-blocked">Compte bloque apres 5 tentatives. Contactez l'administrateur.</span>
     </div>
 
+    <!-- reCAPTCHA requis -->
+    <div class="alert-info" id="captcha-required-msg" style="display:none">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span id="t-captcha-required">Verification de securite requise. Completez le reCAPTCHA pour continuer.</span>
+    </div>
+
     <!-- Tentatives restantes -->
     <div class="alert-warning" id="remaining-msg" style="display:none">
         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -135,7 +161,22 @@
         <span id="t-error">Identifiants incorrects. Veuillez reessayer.</span>
     </div>
 
-    <form th:action="@{/login}" method="post" xmlns:th="http://www.thymeleaf.org">
+    <!-- Barre de tentatives -->
+    <div class="attempt-bar" id="attempt-bar" style="display:none;">
+        <div class="attempt-bar-label">
+            <span id="attempt-label">Tentatives echouees</span>
+            <span id="attempt-count">0 / 5</span>
+        </div>
+        <div class="attempt-dots" id="attempt-dots">
+            <div class="attempt-dot" id="dot-1"></div>
+            <div class="attempt-dot" id="dot-2"></div>
+            <div class="attempt-dot" id="dot-3"></div>
+            <div class="attempt-dot" id="dot-4"></div>
+            <div class="attempt-dot" id="dot-5"></div>
+        </div>
+    </div>
+
+    <form th:action="@{/login}" method="post" xmlns:th="http://www.thymeleaf.org" id="loginForm">
         <div class="form-group">
             <label id="t-email">Adresse email</label>
             <div class="input-wrap">
@@ -158,7 +199,17 @@
             </label>
             <a href="#" class="forgot" onclick="openModal(event)" id="t-forgot">Mot de passe oublie ?</a>
         </div>
-        <button type="submit" class="btn-login">
+
+        <!-- reCAPTCHA widget — visible apres 5 echecs -->
+        <div class="recaptcha-wrapper" id="recaptcha-container" style="display:none;">
+            <div class="g-recaptcha"
+                 data-sitekey="6LcY4CYtAAAAAMIax4LLUjk0v-fhaM-nyBhkMVfG"
+                 data-callback="onCaptchaVerified"
+                 data-expired-callback="onCaptchaExpired">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
             <i class="fa-solid fa-right-to-bracket"></i>
             <span id="t-submit">Se connecter</span>
         </button>
@@ -185,112 +236,148 @@
 </div>
 
 <script>
-const translations = {
-    fr: {
-        heading: 'Se connecter', subtitle: 'Accedez a votre espace documentaire',
-        email: 'Adresse email', emailPlaceholder: 'votre@email.com',
-        password: 'Mot de passe', passwordPlaceholder: 'Entrez votre mot de passe',
-        remember: 'Se souvenir de moi', forgot: 'Mot de passe oublie ?',
-        submit: 'Se connecter', footer: 'RAG Platform 2026 - Timz',
-        modalTitle: 'Mot de passe oublie ?',
-        modalText: 'Entrez votre adresse email et nous vous enverrons un lien de reinitialisation.',
-        modalInput: 'votre@email.com', modalSend: 'Envoyer le lien',
-        error: 'Identifiants incorrects. Veuillez reessayer.',
-        blocked: 'Compte bloque apres 5 tentatives. Contactez l administrateur.',
-        rtl: false
-    },
-    en: {
-        heading: 'Sign In', subtitle: 'Access your document workspace',
-        email: 'Email Address', emailPlaceholder: 'your@email.com',
-        password: 'Password', passwordPlaceholder: 'Enter your password',
-        remember: 'Remember me', forgot: 'Forgot password?',
-        submit: 'Sign In', footer: 'RAG Platform 2026 - Timz',
-        modalTitle: 'Forgot password?',
-        modalText: 'Enter your email address and we will send you a reset link.',
-        modalInput: 'your@email.com', modalSend: 'Send link',
-        error: 'Invalid credentials. Please try again.',
-        blocked: 'Account blocked after 5 attempts. Contact administrator.',
-        rtl: false
-    },
-    ar: {
-        heading: 'تسجيل الدخول', subtitle: 'الوصول إلى مساحة العمل الخاصة بك',
-        email: 'البريد الإلكتروني', emailPlaceholder: 'your@email.com',
-        password: 'كلمة المرور', passwordPlaceholder: 'أدخل كلمة المرور',
-        remember: 'تذكرني', forgot: 'نسيت كلمة المرور؟',
-        submit: 'تسجيل الدخول', footer: 'RAG Platform 2026 - Timz',
-        modalTitle: 'نسيت كلمة المرور؟',
-        modalText: 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
-        modalInput: 'your@email.com', modalSend: 'إرسال الرابط',
-        error: 'بيانات غير صحيحة. حاول مرة أخرى.',
-        blocked: 'تم حظر الحساب بعد 5 محاولات. اتصل بالمسؤول.',
-        rtl: true
+    function onCaptchaVerified() {
+        document.getElementById('loginBtn').disabled = false;
     }
-};
 
-function setLang(lang, e) {
-    const t = translations[lang];
-    document.getElementById('t-heading').textContent = t.heading;
-    document.getElementById('t-subtitle').textContent = t.subtitle;
-    document.getElementById('t-email').textContent = t.email;
-    document.getElementById('t-email-input').placeholder = t.emailPlaceholder;
-    document.getElementById('t-password').textContent = t.password;
-    document.getElementById('pwd').placeholder = t.passwordPlaceholder;
-    document.getElementById('t-remember').textContent = t.remember;
-    document.getElementById('t-forgot').textContent = t.forgot;
-    document.getElementById('t-submit').textContent = t.submit;
-    document.getElementById('t-footer').textContent = t.footer;
-    document.getElementById('t-modal-title').textContent = t.modalTitle;
-    document.getElementById('t-modal-text').textContent = t.modalText;
-    document.getElementById('t-modal-input').placeholder = t.modalInput;
-    document.getElementById('t-modal-send').textContent = t.modalSend;
-    document.getElementById('t-error').textContent = t.error;
-    document.getElementById('t-blocked').textContent = t.blocked;
-    const card = document.getElementById('card');
-    if (t.rtl) { card.classList.add('rtl'); } else { card.classList.remove('rtl'); }
-    document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-    if (e) e.target.classList.add('active');
-    localStorage.setItem('lang', lang);
-}
-
-function togglePwd() {
-    const pwd = document.getElementById('pwd');
-    const icon = document.getElementById('toggleIcon');
-    if (pwd.type === 'password') {
-        pwd.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-        pwd.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    function onCaptchaExpired() {
+        document.getElementById('loginBtn').disabled = true;
     }
-}
 
-function openModal(e) { e.preventDefault(); document.getElementById('forgotModal').classList.add('open'); }
-function closeModal() { document.getElementById('forgotModal').classList.remove('open'); }
-
-const params = new URLSearchParams(window.location.search);
-if (params.has('blocked')) {
-    document.getElementById('blocked-msg').style.display = 'flex';
-} else if (params.has('error')) {
-    if (params.has('remaining')) {
-        const r = params.get('remaining');
-        document.getElementById('remaining-msg').style.display = 'flex';
-        document.getElementById('remaining-text').textContent =
-            'Identifiants incorrects. Il vous reste ' + r + ' tentative(s).';
-    } else {
-        document.getElementById('error-msg').style.display = 'flex';
+    function updateDots(usedCount) {
+        for (let i = 1; i <= 5; i++) {
+            const dot = document.getElementById('dot-' + i);
+            if (i <= usedCount) {
+                dot.classList.add('used');
+            } else {
+                dot.classList.remove('used');
+            }
+        }
+        document.getElementById('attempt-count').textContent = usedCount + ' / 5';
+        document.getElementById('attempt-bar').style.display = 'block';
     }
-}
 
-const savedLang = localStorage.getItem('lang') || 'fr';
-if (savedLang !== 'fr') {
-    document.querySelectorAll('.lang-btn').forEach(b => {
-        if ((savedLang === 'en' && b.textContent === 'EN') ||
-            (savedLang === 'ar' && b.textContent === 'ع')) {
-            b.classList.add('active');
-        } else { b.classList.remove('active'); }
-    });
-    setLang(savedLang, null);
-}
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('captcha_required')) {
+        document.getElementById('captcha-required-msg').style.display = 'flex';
+        document.getElementById('recaptcha-container').style.display = 'flex';
+        document.getElementById('loginBtn').disabled = true;
+        updateDots(5);
+    } else if (params.has('error')) {
+        if (params.has('remaining')) {
+            const r = parseInt(params.get('remaining'));
+            const used = 5 - r;
+            document.getElementById('remaining-msg').style.display = 'flex';
+            document.getElementById('remaining-text').textContent =
+                'Identifiants incorrects. Il vous reste ' + r + ' tentative(s).';
+            updateDots(used);
+            if (r <= 0) {
+                document.getElementById('recaptcha-container').style.display = 'flex';
+                document.getElementById('loginBtn').disabled = true;
+            }
+        } else {
+            document.getElementById('error-msg').style.display = 'flex';
+            updateDots(1);
+        }
+    }
+
+    const translations = {
+        fr: {
+            heading: 'Se connecter', subtitle: 'Accedez a votre espace documentaire',
+            email: 'Adresse email', emailPlaceholder: 'votre@email.com',
+            password: 'Mot de passe', passwordPlaceholder: 'Entrez votre mot de passe',
+            remember: 'Se souvenir de moi', forgot: 'Mot de passe oublie ?',
+            submit: 'Se connecter', footer: 'RAG Platform 2026 - Timz',
+            modalTitle: 'Mot de passe oublie ?',
+            modalText: 'Entrez votre adresse email et nous vous enverrons un lien de reinitialisation.',
+            modalInput: 'votre@email.com', modalSend: 'Envoyer le lien',
+            error: 'Identifiants incorrects. Veuillez reessayer.',
+            blocked: 'Compte bloque apres 5 tentatives. Contactez l administrateur.',
+            captchaRequired: 'Verification de securite requise. Completez le reCAPTCHA pour continuer.',
+            rtl: false
+        },
+        en: {
+            heading: 'Sign In', subtitle: 'Access your document workspace',
+            email: 'Email Address', emailPlaceholder: 'your@email.com',
+            password: 'Password', passwordPlaceholder: 'Enter your password',
+            remember: 'Remember me', forgot: 'Forgot password?',
+            submit: 'Sign In', footer: 'RAG Platform 2026 - Timz',
+            modalTitle: 'Forgot password?',
+            modalText: 'Enter your email address and we will send you a reset link.',
+            modalInput: 'your@email.com', modalSend: 'Send link',
+            error: 'Invalid credentials. Please try again.',
+            blocked: 'Account blocked after 5 attempts. Contact administrator.',
+            captchaRequired: 'Security verification required. Complete the reCAPTCHA to continue.',
+            rtl: false
+        },
+        ar: {
+            heading: 'تسجيل الدخول', subtitle: 'الوصول إلى مساحة العمل الخاصة بك',
+            email: 'البريد الإلكتروني', emailPlaceholder: 'your@email.com',
+            password: 'كلمة المرور', passwordPlaceholder: 'أدخل كلمة المرور',
+            remember: 'تذكرني', forgot: 'نسيت كلمة المرور؟',
+            submit: 'تسجيل الدخول', footer: 'RAG Platform 2026 - Timz',
+            modalTitle: 'نسيت كلمة المرور؟',
+            modalText: 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.',
+            modalInput: 'your@email.com', modalSend: 'إرسال الرابط',
+            error: 'بيانات غير صحيحة. حاول مرة أخرى.',
+            blocked: 'تم حظر الحساب بعد 5 محاولات. اتصل بالمسؤول.',
+            captchaRequired: 'مطلوب التحقق الأمني. أكمل reCAPTCHA للمتابعة.',
+            rtl: true
+        }
+    };
+
+    function setLang(lang, e) {
+        const t = translations[lang];
+        document.getElementById('t-heading').textContent = t.heading;
+        document.getElementById('t-subtitle').textContent = t.subtitle;
+        document.getElementById('t-email').textContent = t.email;
+        document.getElementById('t-email-input').placeholder = t.emailPlaceholder;
+        document.getElementById('t-password').textContent = t.password;
+        document.getElementById('pwd').placeholder = t.passwordPlaceholder;
+        document.getElementById('t-remember').textContent = t.remember;
+        document.getElementById('t-forgot').textContent = t.forgot;
+        document.getElementById('t-submit').textContent = t.submit;
+        document.getElementById('t-footer').textContent = t.footer;
+        document.getElementById('t-modal-title').textContent = t.modalTitle;
+        document.getElementById('t-modal-text').textContent = t.modalText;
+        document.getElementById('t-modal-input').placeholder = t.modalInput;
+        document.getElementById('t-modal-send').textContent = t.modalSend;
+        document.getElementById('t-error').textContent = t.error;
+        document.getElementById('t-blocked').textContent = t.blocked;
+        document.getElementById('t-captcha-required').textContent = t.captchaRequired;
+        const card = document.getElementById('card');
+        if (t.rtl) { card.classList.add('rtl'); } else { card.classList.remove('rtl'); }
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        if (e) e.target.classList.add('active');
+        localStorage.setItem('lang', lang);
+    }
+
+    function togglePwd() {
+        const pwd = document.getElementById('pwd');
+        const icon = document.getElementById('toggleIcon');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    function openModal(e) { e.preventDefault(); document.getElementById('forgotModal').classList.add('open'); }
+    function closeModal() { document.getElementById('forgotModal').classList.remove('open'); }
+
+    const savedLang = localStorage.getItem('lang') || 'fr';
+    if (savedLang !== 'fr') {
+        document.querySelectorAll('.lang-btn').forEach(b => {
+            if ((savedLang === 'en' && b.textContent === 'EN') ||
+                (savedLang === 'ar' && b.textContent === 'ع')) {
+                b.classList.add('active');
+            } else { b.classList.remove('active'); }
+        });
+        setLang(savedLang, null);
+    }
 </script>
 </body>
 </html>

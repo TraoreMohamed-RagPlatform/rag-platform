@@ -28,4 +28,13 @@ public class LoginAttemptService {
         if (count == null) return MAX_ATTEMPTS;
         return Math.max(0, MAX_ATTEMPTS - count.get());
     }
+
+    public void resetAfterCaptcha(String email) {
+        attempts.remove(email);
+    }
+
+    public int getAttempts(String email) {
+        AtomicInteger count = attempts.get(email);
+        return count == null ? 0 : count.get();
+    }
 }
