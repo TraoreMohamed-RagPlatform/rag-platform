@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Connexion - RAG Platform</title>
@@ -176,7 +176,7 @@
         </div>
     </div>
 
-    <form th:action="@{/login}" method="post" xmlns:th="http://www.thymeleaf.org" id="loginForm">
+    <form th:action="@{/login}" method="post" id="loginForm">
         <div class="form-group">
             <label id="t-email">Adresse email</label>
             <div class="input-wrap">
@@ -200,10 +200,10 @@
             <a href="#" class="forgot" onclick="openModal(event)" id="t-forgot">Mot de passe oublie ?</a>
         </div>
 
-        <!-- reCAPTCHA widget — visible apres 5 echecs -->
+        <!-- reCAPTCHA widget — cle injectee via Thymeleaf -->
         <div class="recaptcha-wrapper" id="recaptcha-container" style="display:none;">
             <div class="g-recaptcha"
-                 data-sitekey="6LcY4CYtAAAAAMIax4LLUjk0v-fhaM-nyBhkMVfG"
+                 th:attr="data-sitekey=${recaptchaSiteKey}"
                  data-callback="onCaptchaVerified"
                  data-expired-callback="onCaptchaExpired">
             </div>

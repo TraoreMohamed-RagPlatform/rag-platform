@@ -6,6 +6,7 @@ import com.timz.rag_platform.repository.QuestionRepository;
 import com.timz.rag_platform.repository.UserRepository;
 import com.timz.rag_platform.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,8 +32,12 @@ public class HomeController {
     @Autowired
     private UserService userService;
 
+    @Value("${recaptcha.site-key}")
+    private String recaptchaSiteKey;
+
     @GetMapping("/login")
-    public String login() {
+    public String login(Model model) {
+        model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
         return "auth/login";
     }
 
@@ -43,8 +48,6 @@ public class HomeController {
         model.addAttribute("nombreQuestions", questionRepository.count());
         return "dashboard";
     }
-
-   
 
     @GetMapping("/history")
     public String history(Model model, Authentication auth) {
@@ -95,6 +98,7 @@ public class HomeController {
         }
         return "redirect:/admin";
     }
+
     @GetMapping("/admin/stats")
     public String stats(Model model) {
         model.addAttribute("nombreDocuments", documentRepository.count());
@@ -102,10 +106,12 @@ public class HomeController {
         model.addAttribute("nombreQuestions", questionRepository.count());
         return "stats";
     }
+
     @GetMapping("/settings")
     public String settings() {
-    return "settings";
+        return "settings";
     }
+
     @GetMapping("/admin/users")
     public String adminUsers(Model model) {
         model.addAttribute("users", userService.getTousLesUsers());
