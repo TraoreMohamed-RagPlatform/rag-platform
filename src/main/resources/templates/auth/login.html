@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Connexion - RAG Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=recaptchaCallback&render=explicit" async defer></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -137,37 +137,32 @@
         <p id="t-subtitle">Accedez a votre espace documentaire</p>
     </div>
 
-    <!-- Compte bloque -->
     <div class="alert-error" id="blocked-msg" style="display:none">
         <i class="fa-solid fa-ban"></i>
         <span id="t-blocked">Compte bloque apres 5 tentatives. Contactez l'administrateur.</span>
     </div>
 
-    <!-- reCAPTCHA requis -->
     <div class="alert-info" id="captcha-required-msg" style="display:none">
         <i class="fa-solid fa-shield-halved"></i>
         <span id="t-captcha-required">Verification de securite requise. Completez le reCAPTCHA pour continuer.</span>
     </div>
 
-    <!-- Tentatives restantes -->
     <div class="alert-warning" id="remaining-msg" style="display:none">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <span id="remaining-text"></span>
     </div>
 
-    <!-- Erreur generique -->
     <div class="alert-error" id="error-msg" style="display:none">
         <i class="fa-solid fa-circle-exclamation"></i>
         <span id="t-error">Identifiants incorrects. Veuillez reessayer.</span>
     </div>
 
-    <!-- Barre de tentatives -->
     <div class="attempt-bar" id="attempt-bar" style="display:none;">
         <div class="attempt-bar-label">
             <span id="attempt-label">Tentatives echouees</span>
             <span id="attempt-count">0 / 5</span>
         </div>
-        <div class="attempt-dots" id="attempt-dots">
+        <div class="attempt-dots">
             <div class="attempt-dot" id="dot-1"></div>
             <div class="attempt-dot" id="dot-2"></div>
             <div class="attempt-dot" id="dot-3"></div>
@@ -200,13 +195,8 @@
             <a href="#" class="forgot" onclick="openModal(event)" id="t-forgot">Mot de passe oublie ?</a>
         </div>
 
-        <!-- reCAPTCHA widget — cle injectee via Thymeleaf -->
         <div class="recaptcha-wrapper" id="recaptcha-container" style="display:none;">
-            <div class="g-recaptcha"
-                 th:attr="data-sitekey=${recaptchaSiteKey}"
-                 data-callback="onCaptchaVerified"
-                 data-expired-callback="onCaptchaExpired">
-            </div>
+            <div id="recaptcha-widget"></div>
         </div>
 
         <button type="submit" class="btn-login" id="loginBtn">
@@ -235,13 +225,40 @@
     </div>
 </div>
 
+<script th:inline="javascript">
+    const RECAPTCHA_SITE_KEY = /*[[${recaptchaSiteKey}]]*/ '';
+</script>
+
 <script>
+    let recaptchaRendered = false;
+    let shouldShowRecaptcha = false;
+
     function onCaptchaVerified() {
         document.getElementById('loginBtn').disabled = false;
     }
 
     function onCaptchaExpired() {
         document.getElementById('loginBtn').disabled = true;
+    }
+
+    function showRecaptcha() {
+        if (recaptchaRendered) return;
+        document.getElementById('recaptcha-container').style.display = 'flex';
+        document.getElementById('loginBtn').disabled = true;
+        if (typeof grecaptcha !== 'undefined' && RECAPTCHA_SITE_KEY) {
+            grecaptcha.render('recaptcha-widget', {
+                'sitekey': RECAPTCHA_SITE_KEY,
+                'callback': onCaptchaVerified,
+                'expired-callback': onCaptchaExpired
+            });
+            recaptchaRendered = true;
+        }
+    }
+
+    function recaptchaCallback() {
+        if (shouldShowRecaptcha) {
+            showRecaptcha();
+        }
     }
 
     function updateDots(usedCount) {
@@ -261,8 +278,8 @@
 
     if (params.has('captcha_required')) {
         document.getElementById('captcha-required-msg').style.display = 'flex';
-        document.getElementById('recaptcha-container').style.display = 'flex';
         document.getElementById('loginBtn').disabled = true;
+        shouldShowRecaptcha = true;
         updateDots(5);
     } else if (params.has('error')) {
         if (params.has('remaining')) {
@@ -273,8 +290,8 @@
                 'Identifiants incorrects. Il vous reste ' + r + ' tentative(s).';
             updateDots(used);
             if (r <= 0) {
-                document.getElementById('recaptcha-container').style.display = 'flex';
                 document.getElementById('loginBtn').disabled = true;
+                shouldShowRecaptcha = true;
             }
         } else {
             document.getElementById('error-msg').style.display = 'flex';

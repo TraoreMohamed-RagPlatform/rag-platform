@@ -5,6 +5,9 @@ import com.timz.rag_platform.repository.DocumentRepository;
 import com.timz.rag_platform.repository.QuestionRepository;
 import com.timz.rag_platform.repository.UserRepository;
 import com.timz.rag_platform.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -36,7 +39,8 @@ public class HomeController {
     private String recaptchaSiteKey;
 
     @GetMapping("/login")
-    public String login(Model model) {
+    public String login(Model model, HttpServletRequest request) {
+        request.getSession(true); // force la creation de la session AVANT le rendu Thymeleaf
         model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
         return "auth/login";
     }
